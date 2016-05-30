@@ -1,10 +1,9 @@
 /**
  * angular-permission
  * Route permission and access control as simple as it can get
- * @version v2.3.8 - 2016-05-07
+ * @version v2.3.9 - 2016-05-30
  * @link https://github.com/Narzerus/angular-permission
- * @author Rafael Vidaurre <narzerus@gmail.com> (http://www.rafaelvidaurre.com), Blazej Krysiak
- *   <blazej.krysiak@gmail.com>
+ * @author Rafael Vidaurre <narzerus@gmail.com> (http://www.rafaelvidaurre.com), Blazej Krysiak <blazej.krysiak@gmail.com>
  * @license MIT License, http://www.opensource.org/licenses/MIT
  */
 
@@ -600,6 +599,42 @@
 
     /**
      * Constructs map object instructing authorization service how to handle authorizing
+     * Adding new flag override:boolean, to allow override parents permission and resolve only self
+     *
+     * @example
+     *
+     * 	$stateProvider.state('app', {
+     * 		views: {
+     * 			// some views
+     * 		},
+     * 		data: {
+     * 			permissions: {
+     * 				only: ['AUTHORIZED'],
+     * 				redirectTo: 'login'
+     * 			}
+     * 		}
+     * 	}).state('app.foo', {
+     *      views: {
+     * 		    // some foo views
+     * 		},
+     * 		data: {
+     * 			permissions: {
+     * 				only: ['FOO_ROLE'], // here will be checked AUTHORIZED and FOO_ROLE
+     * 				redirectTo: 'login'
+     * 			}
+     * 		}
+     * 	}).state('app.foo.bar', {
+     * 	  views: {
+     *			// some bar views
+     *		},
+     * 		data: {
+     * 			permissions: {
+     * 				only: ['ALLOW_UNAUTHORIZED'],
+     * 				override: true // flag to allow override previous permissions
+     *			}
+     *		}
+     * 	});
+     *
      * @constructor StatePermissionMap
      * @extends PermissionMap
      * @memberOf permission
@@ -607,12 +642,15 @@
     function StatePermissionMap() {
       this.parent.constructor.call(this);
 
-      var toStateObject = TransitionProperties.toState.$$state();
-      var toStatePath = toStateObject.path.slice().reverse();
+      var toStateObject = TransitionProperties.toState.$$state(),
+        toStatePath = toStateObject.path.slice().reverse(),
+        override = false;
 
-      angular.forEach(toStatePath, function (state) {
-
-        if (state.areSetStatePermissions()) {
+      angular.forEach(toStatePath, function (state, idx) {
+        if (!override && state.areSetStatePermissions()) {
+          if(!idx) { // idx === 0
+            override = state.data.permissions.override || false;
+          }
           var permissionMap = new PermissionMap(state.data.permissions);
           this.extendPermissionMap(permissionMap);
         }

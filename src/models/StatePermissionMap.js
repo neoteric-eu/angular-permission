@@ -69,7 +69,7 @@
       angular.forEach(toStatePath, function (state, idx) {
         if (!override && state.areSetStatePermissions()) {
           if(!idx) { // idx === 0
-            override = state.data.permissions.override | false;
+            override = state.data.permissions.override || false;
           }
           var permissionMap = new PermissionMap(state.data.permissions);
           this.extendPermissionMap(permissionMap);
